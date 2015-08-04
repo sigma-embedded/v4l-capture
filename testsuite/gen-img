@@ -1,0 +1,51 @@
+#! /bin/bash
+
+# http://www.picturetopeople.org/p2p/picture_to_people_colors.p2p/color_converter
+RED_YUV=( 0.299 -0.147 0.615 )
+RED_YCbCr=( 82 90 240 )
+GREEN_YUV=( 0.587 -0.289 -0.515 )
+GREEN_YCbCr=( 145 54 34 )
+BLUE_YUV=( 0.114 0.437 -0.100 )
+BLUE_YCbCr=( 41 240 110 )
+WHITE_YUV=( 1 0 0 )
+WHITE_YCbCr=( 235 128 128 )
+
+write_img() {
+    local cnt=$1
+
+    while let cnt--; do
+	echo -en "\x$2\x$3\x$2\x$4"
+    done
+}
+
+write_yuv() {
+    local y=`dc -e "255     ${2//-/_} *   0.5 + 16o p" | cut -f 1 -d .`
+    local u=`dc -e "128 255 ${3//-/_} * + 0.5 + 16o p" | cut -f 1 -d .`
+    local v=`dc -e "128 255 ${4//-/_} * + 0.5 + 16o p" | cut -f 1 -d .`
+
+    test 0   -lt "$[ 16#$u ]" || u=00
+    test 0   -lt "$[ 16#$v ]" || v=00
+    test 255 -gt "$[ 16#$u ]" || u=ff
+    test 255 -gt "$[ 16#$v ]" || v=ff
+
+    write_img "$1" "$y" "$u" "$v"
+}
+
+write_ycbcr() {
+    local y=` dc -e "${2//-/_} 16o p" | cut -f 1 -d .`
+    local cr=`dc -e "${3//-/_} 16o p" | cut -f 1 -d .`
+    local cb=`dc -e "${4//-/_} 16o p" | cut -f 1 -d .`
+
+    write_img "$1" "$y" "$cr" "$cb"
+}
+
+w=${1:-256}
+h=${2:-256}
+outdir=${3:-.}
+cnt=$[ w * h / 2 ]
+
+for fmt in YUV YCbCr; do
+    for col in RED GREEN BLUE WHITE; do
+	eval write_${fmt,,} "${cnt}" \"\${${col}_${fmt}[@]}\" > ${outdir}/${col,,}.${fmt,,}
+    done
+done
