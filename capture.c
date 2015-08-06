@@ -25,6 +25,8 @@
 
 #define ARRAY_SIZE(_a)	(sizeof(_a)/sizeof(_a)[0])
 
+#define xHAVE_FMT_Y16	1
+
 enum {
 	CMDLINE_OPT_HELP = 0x1000,
 };
@@ -277,11 +279,67 @@ static bool streq(char const *a, char const *b)
 	return strcmp(a, b) == 0;
 }
 
+static bool parse_fmt_x(struct v4l2_mbus_framefmt *fmt, char const *s,
+			unsigned int *rate)
+{
+	char		*err;
+
+	fmt->width = strtoul(s, &err, 10);
+	if (*err != 'x')
+		return false;
+
+	s = err+1;
+
+	fmt->height = strtoul(s, &err, 10);
+	if (*err != '@')
+		return false;
+
+	s = err+1;
+
+	fmt->field = V4L2_FIELD_NONE;
+
+
+	if (strncmp(s, "y", 1) == 0) {
+		unsigned int	bpp = strtoul(s+1, &err, 10);
+
+		if (*err)
+			return false;
+
+		switch (bpp) {
+		case 8:
+			fmt->code = MEDIA_BUS_FMT_Y8_1X8;
+			break;
+		case 10:
+			fmt->code = MEDIA_BUS_FMT_Y10_1X10;
+			break;
+		case 12:
+			fmt->code = MEDIA_BUS_FMT_Y12_1X12;
+			break;
+#ifdef HAVE_FMT_Y16
+		case 16:
+			fmt->code = MEDIA_BUS_FMT_Y16_1X16;
+			break;
+#endif
+
+		default:
+			return false;
+		}
+	} else {
+		return false;
+	}
+
+	*rate = 30;			/* todo */
+	return true;
+}
+
 static bool parse_fmt(struct v4l2_mbus_framefmt *fmt, char const *s,
 		      unsigned int *rate)
 {
 	if (!s)
 		s = "1080p60@10";
+
+	if (strchr(s, 'x'))
+		return parse_fmt_x(fmt, s, rate);
 
 	if (strncmp(s, "1080", 4) == 0) {
 		fmt->width = 1920;
@@ -448,7 +506,7 @@ static bool set_format(struct media_info *info,
 		gst_cap_fn = gst_cap_grey;
 		break;
 
-#if 0
+#ifdef HAVE_FMT_Y16
 	case MEDIA_BUS_FMT_Y16_1X16:
 		bpp    = 16;
 		stride = 1;
