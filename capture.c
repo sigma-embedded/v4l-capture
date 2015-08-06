@@ -414,8 +414,40 @@ static char const *gst_cap_grey(struct media_info const *info,
 				struct v4l2_subdev_format const *fmt,
 				unsigned int bpp)
 {
-	/* todo */
-	return NULL;
+	int		rc;
+	char		*gst_cap = NULL;
+
+	switch (info->out_fmt) {
+	case OUTPUT_FMT_GST0:
+		abort();		/* tood */
+	case OUTPUT_FMT_GST1: {
+		/* TODO */
+		char const	*gst_fmt;
+
+		gst_fmt = "video/x-raw, format=(string)";
+
+		rc = asprintf(&gst_cap,
+			      "%s%s, "
+			      "width=(int)%u, height=(int)%u, "
+			      "framerate=(fraction)%u/1, "
+			      "bpp=(int)%d, depth=(int)%d",
+			      gst_fmt,
+			      bpp > 8 ? "GRAY16_BE" : "GRAY8",
+			      fmt->format.width, fmt->format.height,
+			      info->rate,
+			      (bpp + 7) / 8 * 8, bpp);
+		break;
+	};
+
+	default:
+		rc = -1;
+		break;
+	}
+
+	if (rc < 0)
+		return NULL;
+
+	return gst_cap;
 }
 
 static char const *gst_cap_yuyv(struct media_info const *info,
