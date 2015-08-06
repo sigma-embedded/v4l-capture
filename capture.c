@@ -49,7 +49,6 @@ static struct option const	CMDLINE_OPTIONS[] = {
 
 static char const	NAME_IPU_ENTITY[] = "";
 static char const	NAME_VIDEO_ENTITY[] = "";
-static char const	NAME_SENSOR_ENTITY[] = "";
 
 static void show_help(void)
 {
@@ -261,10 +260,15 @@ static bool media_init(struct media_info *info)
 					 info->name_video_entity,
 					 &info->fd_video_dev);
 
-		if (rc == 0)
 		if (rc != 0)
+			rc = rc; /* noop */
+		else if (info->name_sensor_entity != NULL)
 			rc = open_entity(&entity,
 					 info->name_sensor_entity,
+					 &info->fd_sensor_dev);
+		else if (strchr(entity.name, '@') != NULL)
+			rc = open_entity(&entity,
+					 entity.name,
 					 &info->fd_sensor_dev);
 
 		if (rc < 0)
@@ -1013,7 +1017,7 @@ int main(int argc, char *argv[])
 		.gst_cap		= NULL,
 		.name_ipu_entity	= NAME_IPU_ENTITY,
 		.name_video_entity	= NAME_VIDEO_ENTITY,
-		.name_sensor_entity	= NAME_SENSOR_ENTITY,
+		.name_sensor_entity	= NULL,
 	};
 
 	struct v4l2_subdev_format	fmt = {
