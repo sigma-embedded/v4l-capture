@@ -269,6 +269,8 @@ out:
 		xclose(info->fd_sensor_dev);
 		xclose(info->fd_video_dev);
 		xclose(info->fd_ipu_dev);
+
+		fprintf(stderr, "%s failed: %d\n", __func__, rc);
 	}
 
 	return rc == 0;
