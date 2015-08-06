@@ -29,6 +29,9 @@
 
 enum {
 	CMDLINE_OPT_HELP = 0x1000,
+	CMDLINE_OPT_IPU_ENTITY,
+	CMDLINE_OPT_VIDEO_ENTITY,
+	CMDLINE_OPT_SENSOR_ENTITY,
 };
 
 static struct option const	CMDLINE_OPTIONS[] = {
@@ -37,6 +40,9 @@ static struct option const	CMDLINE_OPTIONS[] = {
 	{ "filter",        required_argument, 0, 'f' },
 	{ "stream-format", required_argument, 0, 'S' },
 	{ "help",          no_argument,       0, CMDLINE_OPT_HELP },
+	{ "ipu-entity",	   required_argument, 0, CMDLINE_OPT_IPU_ENTITY },
+	{ "video-entity",  required_argument, 0, CMDLINE_OPT_VIDEO_ENTITY },
+	{ "sensor-entity", required_argument, 0, CMDLINE_OPT_SENSOR_ENTITY },
 	{ 0, 0, 0, 0}
 };
 
@@ -247,13 +253,18 @@ static bool media_init(struct media_info *info)
 			goto out;
 		}
 
-		rc = open_entity(&entity, NAME_IPU_ENTITY, &info->fd_ipu_dev);
+		rc = open_entity(&entity,
+				 info->name_ipu_entity,
+				 &info->fd_ipu_dev);
 		if (rc == 0)
-			rc = open_entity(&entity, NAME_VIDEO_ENTITY,
+			rc = open_entity(&entity,
+					 info->name_video_entity,
 					 &info->fd_video_dev);
 
 		if (rc == 0)
-			rc = open_entity(&entity, NAME_SENSOR_ENTITY,
+		if (rc != 0)
+			rc = open_entity(&entity,
+					 info->name_sensor_entity,
 					 &info->fd_sensor_dev);
 
 		if (rc < 0)
@@ -998,7 +1009,13 @@ static enum media_stream_fmt parse_stream_fmt(char const *s)
 
 int main(int argc, char *argv[])
 {
-	struct media_info		info = { .gst_cap = NULL };
+	struct media_info		info = {
+		.gst_cap		= NULL,
+		.name_ipu_entity	= NAME_IPU_ENTITY,
+		.name_video_entity	= NAME_VIDEO_ENTITY,
+		.name_sensor_entity	= NAME_SENSOR_ENTITY,
+	};
+
 	struct v4l2_subdev_format	fmt = {
 		.which	= V4L2_SUBDEV_FORMAT_ACTIVE,
 		.pad	= 1,
@@ -1021,6 +1038,15 @@ int main(int argc, char *argv[])
 		case 'O':	opt_fd = atoi(optarg); break;
 		case 'f':	opt_filter = atoi(optarg); break;
 		case 'S':	info.out_fmt = parse_stream_fmt(optarg); break;
+		case CMDLINE_OPT_IPU_ENTITY:
+			info.name_ipu_entity = optarg;
+			break;
+		case CMDLINE_OPT_VIDEO_ENTITY:
+			info.name_video_entity = optarg;
+			break;
+		case CMDLINE_OPT_SENSOR_ENTITY:
+			info.name_sensor_entity = optarg;
+			break;
 		case CMDLINE_OPT_HELP:	show_help(); break;
 		default:
 			fprintf(stderr, "Try --help for more information\n");
