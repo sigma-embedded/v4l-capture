@@ -46,9 +46,8 @@ static struct option const	CMDLINE_OPTIONS[] = {
 	{ 0, 0, 0, 0}
 };
 
-
-static char const	NAME_IPU_ENTITY[] = "";
-static char const	NAME_VIDEO_ENTITY[] = "";
+static char const	NAME_IPU_ENTITY[]	= "ipu0-csi0-sd";
+static char const	NAME_VIDEO_ENTITY[]	= "ipu0-csi0-video";
 
 static void show_help(void)
 {
