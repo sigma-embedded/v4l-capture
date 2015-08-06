@@ -28,7 +28,7 @@ enum media_stream_fmt {
 struct media_info {
 	int			fd_ipu_dev;
 	int			fd_video_dev;
-	int			fd_fpga_dev;
+	int			fd_sensor_dev;
 
 	unsigned int		width;
 	unsigned int		height;
