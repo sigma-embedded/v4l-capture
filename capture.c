@@ -500,6 +500,10 @@ static bool set_format(struct media_info *info,
 					      struct v4l2_subdev_format const *,
 					      unsigned int bpp);
 	char const		*gst_cap;
+	struct v4l2_subdev_format	cam_fmt = {
+		.which	= V4L2_SUBDEV_FORMAT_ACTIVE,
+		.pad	= 0,
+	};
 
 	struct v4l2_format	v4l_fmt = {
 		.type = V4L2_BUF_TYPE_VIDEO_CAPTURE,
@@ -567,7 +571,17 @@ static bool set_format(struct media_info *info,
 	v4l_fmt.fmt.pix.bytesperline = stride;
 	v4l_fmt.fmt.pix.sizeimage = stride * fmt->format.height;
 
-	rc = (set_format_on_pad(info->fd_ipu_dev, 0, fmt) &&
+	rc = ioctl(info->fd_sensor_dev, VIDIOC_SUBDEV_G_FMT, &cam_fmt);
+	if (rc < 0) {
+		perror("VIDIOC_SUBDEV_G_FMT(<sensor>)");
+		return false;
+	}
+
+	cam_fmt.format.width  = fmt->format.width;
+	cam_fmt.format.height = fmt->format.height;
+
+	rc = (set_format_on_pad(info->fd_sensor_dev, 0, &cam_fmt) &&
+	      set_format_on_pad(info->fd_ipu_dev,    0, &cam_fmt) &&
 	      set_format_on_pad(info->fd_ipu_dev, 1, fmt));
 
 	/* TODO: set format on sensor and video too? */
