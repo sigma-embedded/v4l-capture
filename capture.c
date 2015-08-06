@@ -41,7 +41,7 @@ static struct option const	CMDLINE_OPTIONS[] = {
 
 static char const	NAME_IPU_ENTITY[] = "";
 static char const	NAME_VIDEO_ENTITY[] = "";
-static char const	NAME_FPGA_ENTITY[] = "";
+static char const	NAME_SENSOR_ENTITY[] = "";
 
 static void show_help(void)
 {
@@ -217,7 +217,7 @@ static bool media_init(struct media_info *info)
 
 	info->fd_ipu_dev = -1;
 	info->fd_video_dev = -1;
-	info->fd_fpga_dev = -1;
+	info->fd_sensor_dev = -1;
 
 	fd = open("/dev/media0", O_RDWR | O_NOCTTY);
 	if (fd < 0) {
@@ -251,8 +251,8 @@ static bool media_init(struct media_info *info)
 					 &info->fd_video_dev);
 
 		if (rc == 0)
-			rc = open_entity(&entity, NAME_FPGA_ENTITY,
-					 &info->fd_fpga_dev);
+			rc = open_entity(&entity, NAME_SENSOR_ENTITY,
+					 &info->fd_sensor_dev);
 
 		if (rc < 0)
 			goto out;
@@ -264,7 +264,7 @@ static bool media_init(struct media_info *info)
 
 out:
 	if (rc < 0) {
-		xclose(info->fd_fpga_dev);
+		xclose(info->fd_sensor_dev);
 		xclose(info->fd_video_dev);
 		xclose(info->fd_ipu_dev);
 	}
@@ -480,7 +480,7 @@ static bool set_format(struct media_info *info,
 	rc = (set_format_on_pad(info->fd_ipu_dev, 0, fmt) &&
 	      set_format_on_pad(info->fd_ipu_dev, 1, fmt));
 
-	/* TODO: set format on fpga and video too? */
+	/* TODO: set format on sensor and video too? */
 
 	if (!rc)
 		return false;
@@ -830,7 +830,7 @@ static int init_forking_filter(struct media_info *info, int out_fd,
 	close(fd_pipe[1]);
 	close(info->fd_ipu_dev);
 	close(info->fd_video_dev);
-	close(info->fd_fpga_dev);
+	close(info->fd_sensor_dev);
 
 	rc = fn(info, out_fd, fd_pipe[0]);
 	_exit(rc);
