@@ -807,8 +807,13 @@ static bool stream_v4l(int out_fd, struct media_info const *info)
 
 		select(fd+out_fd+1, &fds_in, &fds_out, NULL, NULL);
 
-		if (FD_ISSET(0, &fds_in))
-			break;
+		if (FD_ISSET(0, &fds_in)) {
+			int c = getc(stdin);
+			if (c == 'd')
+				dump_next = true;
+			else if (c == 'q')
+				break;
+		}
 
 		if (FD_ISSET(out_fd, &fds_out)) {
 			int	rc;
