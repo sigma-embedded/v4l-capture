@@ -30,6 +30,10 @@ struct media_info {
 	int			fd_video_dev;
 	int			fd_sensor_dev;
 
+	char const		*name_ipu_entity;
+	char const		*name_video_entity;
+	char const		*name_sensor_entity;
+
 	unsigned int		width;
 	unsigned int		height;
 	unsigned int		bpp;
