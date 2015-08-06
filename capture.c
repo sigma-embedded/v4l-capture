@@ -777,6 +777,7 @@ static bool stream_v4l(int out_fd, struct media_info const *info)
 	uint64_t			first_tm = 0;
 	struct xmit_buffer		xmit;
 	size_t				buf_cnt = ARRAY_SIZE(buffers);
+	bool				dump_next = false;
 
 	if (!allocate_buffers(fd, info, buffers, &buf_cnt))
 		return false;
@@ -829,6 +830,17 @@ static bool stream_v4l(int out_fd, struct media_info const *info)
 			break;
 		else
 			in_buf = &buffers[buf.index];
+
+		if (dump_next && in_buf) {
+			uint16_t const	*d = in_buf->mem;
+
+			printf("\n[%04x, %04x |  %04x, %04x | %04x, %04x]\n",
+			       d[0], d[1],
+			       d[2*info->stride/2], d[2*info->stride/2+1],
+			       d[3*info->stride/2], d[3*info->stride/2+1]);
+
+			dump_next = false;
+		}
 
 		if (in_buf == NULL)
 			;		/* noop */
