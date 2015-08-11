@@ -608,6 +608,7 @@ static bool set_format(struct media_info *info,
 		bpp    = 8;
 		stride = 1;
 		gst_cap_fn = gst_cap_grey;
+		v4l_fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_GREY;
 		break;
 
 	case MEDIA_BUS_FMT_Y10_1X10:
@@ -635,6 +636,7 @@ static bool set_format(struct media_info *info,
 		bpp    = 8;
 		stride = 2;
 		gst_cap_fn = gst_cap_yuyv;
+		v4l_fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
 		break;
 
 	case MEDIA_BUS_FMT_YUYV10_2X10:
