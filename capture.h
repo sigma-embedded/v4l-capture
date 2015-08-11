@@ -23,6 +23,7 @@
 enum media_stream_fmt {
 	OUTPUT_FMT_GST0,
 	OUTPUT_FMT_GST1,
+	OUTPUT_FMT_RAW,
 };
 
 struct media_info {

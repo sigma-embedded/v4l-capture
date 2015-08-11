@@ -81,6 +81,7 @@ static void show_help(void)
 	       "-S|--stream-format <fmt>\n"
 	       "                    0 - gstreamer-0.10 format\n"
 	       "                    1 - gstreamer-1.x format\n"
+	       "                    2 - raw\n"
 	       "\n"
 	       "<display-mode>      format <width>[ip]<freq>@<depth>\n"
 	       "\n\n"
@@ -471,6 +472,11 @@ static char const *gst_cap_grey(struct media_info const *info,
 		break;
 	};
 
+	case OUTPUT_FMT_RAW:
+		gst_cap = strdup("");
+		rc = 0;
+		break;
+
 	default:
 		rc = -1;
 		break;
@@ -510,6 +516,11 @@ static char const *gst_cap_yuyv(struct media_info const *info,
 			      (bpp + 7) / 8 * 8, bpp);
 		break;
 	}
+
+	case OUTPUT_FMT_RAW:
+		gst_cap = strdup("");
+		rc = 0;
+		break;
 
 	default:
 		rc = -1;
@@ -828,7 +839,14 @@ static bool stream_v4l(int out_fd, struct media_info const *info)
 	if (!allocate_buffers(fd, info, buffers, &buf_cnt))
 		return false;
 
-	write_gdp_caps(out_fd, info);
+	switch (info->out_fmt) {
+	case OUTPUT_FMT_GST0:
+	case OUTPUT_FMT_GST1:
+		write_gdp_caps(out_fd, info);
+		break;
+	case OUTPUT_FMT_RAW:
+		break;
+	}
 
 	stream_enable(fd, true);
 
@@ -915,7 +933,7 @@ static bool stream_v4l(int out_fd, struct media_info const *info)
 			if (first_tm == 0)
 				first_tm = tm;
 
-			xmit.hdr_sent = false;
+			xmit.hdr_sent = info->out_fmt == OUTPUT_FMT_RAW;
 			xmit.pos = 0;
 			xmit.gdp.timestamp = htobe64(tm - first_tm);
 			write(1, ".", 1);
@@ -1020,6 +1038,8 @@ static enum media_stream_fmt parse_stream_fmt(char const *s)
 		return OUTPUT_FMT_GST0;
 	case 1:
 		return OUTPUT_FMT_GST1;
+	case 2:
+		return OUTPUT_FMT_RAW;
 	default:
 		fprintf(stderr, "bad stream format '%s'\n", s);
 		exit(EX_USAGE);
