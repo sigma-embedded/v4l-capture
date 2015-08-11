@@ -332,7 +332,42 @@ static bool parse_fmt_x(struct v4l2_mbus_framefmt *fmt, char const *s,
 	fmt->field = V4L2_FIELD_NONE;
 
 
-	if (strncmp(s, "y", 1) == 0) {
+	if (strncmp(s, "YUYV", 4) == 0) {
+		unsigned int	bpp = strtoul(s+4, &err, 10);
+
+		if (*err)
+			return false;
+
+		switch (bpp) {
+		case 8:
+			fmt->code = MEDIA_BUS_FMT_YUYV8_2X8;
+			break;
+		case 10:
+			fmt->code = MEDIA_BUS_FMT_YUYV10_2X10;
+			break;
+		case 12:
+			fmt->code = MEDIA_BUS_FMT_YUYV12_2X12;
+			break;
+		default:
+			return false;
+		}
+	} else if (strncmp(s, "yuyv", 4) == 0) {
+		unsigned int	bpp = strtoul(s+4, &err, 10);
+
+		if (*err)
+			return false;
+
+		switch (bpp) {
+		case 8:
+			fmt->code = MEDIA_BUS_FMT_YUYV8_1X16;
+			break;
+		case 10:
+			fmt->code = MEDIA_BUS_FMT_YUYV10_1X20;
+			break;
+		default:
+			return false;
+		}
+	} else if (strncmp(s, "y", 1) == 0) {
 		unsigned int	bpp = strtoul(s+1, &err, 10);
 
 		if (*err)
@@ -593,14 +628,20 @@ static bool set_format(struct media_info *info,
 		break;
 #endif
 
+	case MEDIA_BUS_FMT_YUYV8_2X8:
 	case MEDIA_BUS_FMT_YUYV8_1X16:
 		bpp    = 8;
 		stride = 2;
 		gst_cap_fn = gst_cap_yuyv;
 		break;
 
+	case MEDIA_BUS_FMT_YUYV10_2X10:
 	case MEDIA_BUS_FMT_YUYV10_1X20:
 		bpp    = 10;
+		stride = 2;
+		gst_cap_fn = gst_cap_yuyv;
+	case MEDIA_BUS_FMT_YUYV12_2X12:
+		bpp    = 12;
 		stride = 2;
 		gst_cap_fn = gst_cap_yuyv;
 		break;
