@@ -1095,7 +1095,7 @@ int main(int argc, char *argv[])
 
 	if (!parse_fmt(&fmt.format, optind == argc ? NULL : argv[optind],
 		       &info.rate)) {
-		fprintf(stderr, "failed to parse format '%s'\n", argv[1]);
+		fprintf(stderr, "failed to parse format '%s'\n", argv[optind]);
 		return EX_USAGE;
 	}
 
