@@ -487,7 +487,9 @@ static char const *gst_cap_grey(struct media_info const *info,
 
 	switch (info->out_fmt) {
 	case OUTPUT_FMT_GST0:
-		abort();		/* tood */
+		assert(false);		/* todo */
+		abort();
+
 	case OUTPUT_FMT_GST1: {
 		/* TODO */
 		char const	*gst_fmt;
