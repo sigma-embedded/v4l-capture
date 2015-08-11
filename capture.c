@@ -644,6 +644,9 @@ static bool set_format(struct media_info *info,
 		bpp    = 10;
 		stride = 2;
 		gst_cap_fn = gst_cap_yuyv;
+		info->fourcc = V4L2_PIX_FMT_YVU420;
+		break;
+
 	case MEDIA_BUS_FMT_YUYV12_2X12:
 		bpp    = 12;
 		stride = 2;
