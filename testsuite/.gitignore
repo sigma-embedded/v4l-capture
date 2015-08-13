@@ -1,6 +1,8 @@
 /*.stamp
+/.dirstamp
 /blue.*
 /green.*
 /red.*
 /run-filter
 /white.*
+/yuv2rgb-perf
