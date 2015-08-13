@@ -571,7 +571,8 @@ static char const *gst_cap_yuyv(struct media_info const *info,
 }
 
 static bool set_format(struct media_info *info,
-		       struct v4l2_subdev_format const *fmt)
+		       struct v4l2_subdev_format const *fmt,
+		       struct v4l2_subdev_format const *cam_tmpl)
 {
 	bool			rc;
 	unsigned int		bpp;
@@ -668,8 +669,14 @@ static bool set_format(struct media_info *info,
 		return false;
 	}
 
-	cam_fmt.format.width  = fmt->format.width;
-	cam_fmt.format.height = fmt->format.height;
+	if (cam_tmpl) {
+		cam_fmt.format.width  = cam_tmpl->format.width;
+		cam_fmt.format.height = cam_tmpl->format.height;
+		cam_fmt.format.code   = cam_tmpl->format.code;
+	} else {
+		cam_fmt.format.width  = fmt->format.width;
+		cam_fmt.format.height = fmt->format.height;
+	}
 
 	rc = (set_format_on_pad(info->fd_sensor_dev, 0, &cam_fmt) &&
 	      set_format_on_pad(info->fd_ipu_dev,    0, &cam_fmt) &&
@@ -1107,6 +1114,14 @@ int main(int argc, char *argv[])
 		.which	= V4L2_SUBDEV_FORMAT_ACTIVE,
 		.pad	= 1,
 	};
+
+	struct v4l2_subdev_format	cam_fmt = {
+		.which	= V4L2_SUBDEV_FORMAT_ACTIVE,
+		.pad	= 1,
+	};
+
+	struct v4l2_subdev_format	*cam_fmt_ptr;
+
 	int				opt_mode = 0;
 	int				opt_fd = 3;
 	int				opt_filter = 0;
@@ -1147,8 +1162,18 @@ int main(int argc, char *argv[])
 		return EX_USAGE;
 	}
 
+	if (optind+1 >= argc) {
+		cam_fmt_ptr = NULL;
+	} else if (!parse_fmt(&cam_fmt.format, argv[optind+1], &info.cam_rate)) {
+		fprintf(stderr, "failed to parse format '%s'\n",
+			argv[optind+1]);
+		return EX_USAGE;
+	} else {
+		cam_fmt_ptr = &cam_fmt;
+	}
+
 	if (!media_init(&info) ||
-	    !set_format(&info, &fmt))
+	    !set_format(&info, &fmt, cam_fmt_ptr))
 		return EX_OSERR;
 
 	out_fd = init_filter(&info, opt_fd, opt_filter);

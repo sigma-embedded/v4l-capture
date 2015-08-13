@@ -41,6 +41,7 @@ struct media_info {
 	unsigned int		stride;
 	unsigned int		size;
 	unsigned int		rate;
+	unsigned int		cam_rate;
 	unsigned int		fourcc;
 
 	char const		*gst_cap;
