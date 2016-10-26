@@ -490,7 +490,8 @@ static bool set_format_on_pad(int fd, int pad,
 
 static char const *gst_cap_grey(struct media_info const *info,
 				struct v4l2_subdev_format const *fmt,
-				unsigned int bpp)
+				unsigned int bpp,
+				char const *fmt_name)
 {
 	int		rc;
 	char		*gst_cap = NULL;
@@ -511,8 +512,7 @@ static char const *gst_cap_grey(struct media_info const *info,
 			      "width=(int)%u, height=(int)%u, "
 			      "framerate=(fraction)%u/1, "
 			      "bpp=(int)%d, depth=(int)%d",
-			      gst_fmt,
-			      bpp > 8 ? "GRAY16_LE" : "GRAY8",
+			      gst_fmt, fmt_name,
 			      fmt->format.width, fmt->format.height,
 			      info->rate,
 			      (bpp + 7) / 8 * 8, bpp);
@@ -535,9 +535,10 @@ static char const *gst_cap_grey(struct media_info const *info,
 	return gst_cap;
 }
 
-static char const *gst_cap_yuyv(struct media_info const *info,
-				struct v4l2_subdev_format const *fmt,
-				unsigned int bpp)
+static char const *gst_cap_yuv(struct media_info const *info,
+			       struct v4l2_subdev_format const *fmt,
+			       unsigned int bpp,
+			       char const *fmt_name)
 {
 	int		rc;
 	char		*gst_cap = NULL;
@@ -557,7 +558,7 @@ static char const *gst_cap_yuyv(struct media_info const *info,
 			      "width=(int)%u, height=(int)%u, "
 			      "framerate=(fraction)%u/1, "
 			      "bpp=(int)%d, depth=(int)%d",
-			      gst_fmt, "YUY2",
+			      gst_fmt, fmt_name,
 			      fmt->format.width, fmt->format.height,
 			      info->rate,
 			      (bpp + 7) / 8 * 8, bpp);
@@ -580,6 +581,76 @@ static char const *gst_cap_yuyv(struct media_info const *info,
 	return gst_cap;
 }
 
+typedef char const *(*gst_cap_fn_t)(struct media_info const *,
+				    struct v4l2_subdev_format const *,
+				    unsigned int bpp,
+				    char const *fmt_name);
+
+
+#define MEDIA_GREY(_bpp, _bus, _gst)		\
+	{							\
+		.code	= MEDIA_BUS_FMT_Y ## _bpp ## _ ## _bus,	\
+		.bpp	= (_bpp),				\
+		.stride = 1,					\
+		.fn	= gst_cap_grey,				\
+		.fourcc = V4L2_PIX_FMT_GREY,			\
+		.gst_fmt = (_gst),				\
+	}
+
+#define MEDIA_YUV(_fmt, _bpp, _bus, _gst)			\
+	{							\
+		.code	= MEDIA_BUS_FMT_ ## _fmt ##  _bpp ## _ ## _bus,	\
+		.bpp	= (_bpp),				\
+		.stride = 2,					\
+		.fn 	= gst_cap_yuv,				\
+		.fourcc = V4L2_PIX_FMT_ ## _fmt,		\
+		.gst_fmt = (_gst),				\
+	}
+
+static struct {
+	unsigned int		code;
+	unsigned int		bpp:4;
+	unsigned int		stride:2;
+	gst_cap_fn_t		fn;
+	unsigned int		fourcc;
+	char const		*gst_fmt;
+} const		MEDIA_DESC[] = {
+	MEDIA_GREY( 8, 1X8,  "GRAY8"),
+	MEDIA_GREY(10, 1X10, "GRAY10"),
+	MEDIA_GREY(12, 1X12, "GRAY12"),
+#ifdef MEDIA_BUS_FMT_Y16_1X16
+	MEDIA_GREY(16, 1X16, "GRAY16_LE"),
+#endif
+	MEDIA_YUV(YUYV,  8, 2X8,  "YUY2"),
+	MEDIA_YUV(YUYV, 10, 2X10, "YUY2"),
+	MEDIA_YUV(YUYV, 12, 2X12, "YUY2"),
+	MEDIA_YUV(YUYV,  8, 1X16, "YUY2"),
+	MEDIA_YUV(YUYV, 10, 1X20, "YUY2"),
+	MEDIA_YUV(YUYV, 12, 1X24, "YUY2"),
+
+	MEDIA_YUV(YVYU,  8, 2X8,  "YVYU"),
+	MEDIA_YUV(YVYU, 10, 2X10, "YVYU"),
+	MEDIA_YUV(YVYU, 12, 2X12, "YVYU"),
+	MEDIA_YUV(YVYU,  8, 1X16, "YVYU"),
+	MEDIA_YUV(YVYU, 10, 1X20, "YVYU"),
+	MEDIA_YUV(YVYU, 12, 1X24, "YVYU"),
+
+	MEDIA_YUV(UYVY,  8, 2X8,  "UYVY"),
+	MEDIA_YUV(UYVY, 10, 2X10, "UYVY"),
+	MEDIA_YUV(UYVY, 12, 2X12, "UYVY"),
+	MEDIA_YUV(UYVY,  8, 1X16, "UYVY"),
+	MEDIA_YUV(UYVY, 10, 1X20, "UYVY"),
+	MEDIA_YUV(UYVY, 12, 1X24, "UYVY"),
+
+	/* TODO: gstreamer code is wrong! */
+	MEDIA_YUV(VYUY,  8, 2X8,  "VYUY"),
+	MEDIA_YUV(VYUY, 10, 2X10, "VYUY"),
+	MEDIA_YUV(VYUY, 12, 2X12, "VYUY"),
+	MEDIA_YUV(VYUY,  8, 1X16, "VYUY"),
+	MEDIA_YUV(VYUY, 10, 1X20, "VYUY"),
+	MEDIA_YUV(VYUY, 12, 1X24, "VYUY"),
+};
+
 static bool set_format(struct media_info *info,
 		       struct v4l2_subdev_format const *fmt,
 		       struct v4l2_subdev_format const *cam_tmpl)
@@ -587,9 +658,8 @@ static bool set_format(struct media_info *info,
 	bool			rc;
 	unsigned int		bpp;
 	unsigned int		stride;
-	char const *		(*gst_cap_fn)(struct media_info const *,
-					      struct v4l2_subdev_format const *,
-					      unsigned int bpp);
+	gst_cap_fn_t		gst_cap_fn;
+	char const*		gst_cap_fmt;
 	char const		*gst_cap;
 	struct v4l2_subdev_format	cam_fmt = {
 		.which	= V4L2_SUBDEV_FORMAT_ACTIVE,
@@ -614,59 +684,24 @@ static bool set_format(struct media_info *info,
 		}
 	};
 
-	switch (fmt->format.code) {
-	case MEDIA_BUS_FMT_Y8_1X8:
-		bpp    = 8;
-		stride = 1;
-		gst_cap_fn = gst_cap_grey;
-		v4l_fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_GREY;
-		break;
+	bool			found;
 
-	case MEDIA_BUS_FMT_Y10_1X10:
-		bpp    = 10;
-		stride = 1;
-		gst_cap_fn = gst_cap_grey;
-		break;
+	found = false;
+	for (size_t i = 0; i < ARRAY_SIZE(MEDIA_DESC); ++i) {
+		if (MEDIA_DESC[i].code == fmt->format.code) {
+			bpp        = MEDIA_DESC[i].bpp;
+			stride     = MEDIA_DESC[i].stride;
+			gst_cap_fn = MEDIA_DESC[i].fn;
+			v4l_fmt.fmt.pix.pixelformat = MEDIA_DESC[i].fourcc;
+			gst_cap_fmt = MEDIA_DESC[i].gst_fmt;
 
-	case MEDIA_BUS_FMT_Y12_1X12:
-		bpp    = 12;
-		stride = 1;
-		gst_cap_fn = gst_cap_grey;
-		break;
-
-#ifdef HAVE_FMT_Y16
-	case MEDIA_BUS_FMT_Y16_1X16:
-		bpp    = 16;
-		stride = 1;
-		gst_cap_fn = gst_cap_grey;
-		break;
-#endif
-
-	case MEDIA_BUS_FMT_YUYV8_2X8:
-	case MEDIA_BUS_FMT_YUYV8_1X16:
-		bpp    = 8;
-		stride = 2;
-		gst_cap_fn = gst_cap_yuyv;
-		v4l_fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-		break;
-
-	case MEDIA_BUS_FMT_YUYV10_2X10:
-	case MEDIA_BUS_FMT_YUYV10_1X20:
-		bpp    = 10;
-		stride = 2;
-		gst_cap_fn = gst_cap_yuyv;
-		info->fourcc = V4L2_PIX_FMT_YVU420;
-		break;
-
-	case MEDIA_BUS_FMT_YUYV12_2X12:
-		bpp    = 12;
-		stride = 2;
-		gst_cap_fn = gst_cap_yuyv;
-		break;
-
-	default:
-		assert(false);
+			found = true;
+			break;
+		};
 	}
+
+	if (!found)
+		return false;
 
 	stride *= ((bpp + 7) / 8) * fmt->format.width;
 
@@ -705,7 +740,7 @@ static bool set_format(struct media_info *info,
 	if (!gst_cap_fn) {
 		gst_cap = NULL;
 	} else {
-		gst_cap = gst_cap_fn(info, fmt, bpp);
+		gst_cap = gst_cap_fn(info, fmt, bpp, gst_cap_fmt);
 		if (!gst_cap)
 			return false;
 	}
