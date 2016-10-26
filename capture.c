@@ -512,7 +512,7 @@ static char const *gst_cap_grey(struct media_info const *info,
 			      "framerate=(fraction)%u/1, "
 			      "bpp=(int)%d, depth=(int)%d",
 			      gst_fmt,
-			      bpp > 8 ? "GRAY16_BE" : "GRAY8",
+			      bpp > 8 ? "GRAY16_LE" : "GRAY8",
 			      fmt->format.width, fmt->format.height,
 			      info->rate,
 			      (bpp + 7) / 8 * 8, bpp);
