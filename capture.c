@@ -312,10 +312,73 @@ static bool streq(char const *a, char const *b)
 	return strcmp(a, b) == 0;
 }
 
+static struct {
+	char const	*fmt;
+	unsigned int	code;
+} const		FMT_DESC[] = {
+	{ "YUYV8",  MEDIA_BUS_FMT_YUYV8_2X8 },
+	{ "YUYV10", MEDIA_BUS_FMT_YUYV10_2X10 },
+	{ "YUYV12", MEDIA_BUS_FMT_YUYV12_2X12 },
+
+	{ "yuyv8",  MEDIA_BUS_FMT_YUYV8_1X16 },
+	{ "yuyv10", MEDIA_BUS_FMT_YUYV10_1X20 },
+#ifdef MEDIA_BUS_FMT_YUYV10_1X24
+	{ "yuyv12", MEDIA_BUS_FMT_YUYV10_1X24 },
+#endif
+
+	{ "YVYU8",  MEDIA_BUS_FMT_YVYU8_2X8 },
+	{ "YVYU10", MEDIA_BUS_FMT_YVYU10_2X10 },
+	{ "YVYU12", MEDIA_BUS_FMT_YVYU12_2X12 },
+
+	{ "yvyu8",  MEDIA_BUS_FMT_YVYU8_1X16 },
+	{ "yvyu10", MEDIA_BUS_FMT_YVYU10_1X20 },
+#ifdef MEDIA_BUS_FMT_YVYU10_1X24
+	{ "yvyu12", MEDIA_BUS_FMT_YVYU10_1X24 },
+#endif
+
+	{ "UYVY8",  MEDIA_BUS_FMT_UYVY8_2X8 },
+	{ "UYVY10", MEDIA_BUS_FMT_UYVY10_2X10 },
+#ifdef MEDIA_BUS_FMT_UYVY12_2X12
+	{ "UYVY12", MEDIA_BUS_FMT_UYVY12_2X12 },
+#endif
+
+	{ "uyvy8",  MEDIA_BUS_FMT_UYVY8_1X16 },
+	{ "uyvy10", MEDIA_BUS_FMT_UYVY10_1X20 },
+#ifdef MEDIA_BUS_FMT_UYVY10_1X24
+	{ "uyvy12", MEDIA_BUS_FMT_UYVY10_1X24 },
+#endif
+
+	{ "VYUY8",  MEDIA_BUS_FMT_VYUY8_2X8 },
+	{ "VYUY10", MEDIA_BUS_FMT_VYUY10_2X10 },
+	{ "VYUY12", MEDIA_BUS_FMT_VYUY12_2X12 },
+
+	{ "vyuy8",  MEDIA_BUS_FMT_VYUY8_1X16 },
+	{ "vyuy10", MEDIA_BUS_FMT_VYUY10_1X20 },
+#ifdef MEDIA_BUS_FMT_VYUY10_1X24
+	{ "vyuy12", MEDIA_BUS_FMT_VYUY10_1X24 },
+#endif
+
+	/* NOTE: uppercase 'Y' and lowercase 'y' have same mbus fmt */
+	{ "Y8",     MEDIA_BUS_FMT_Y8_1X8 },
+	{ "Y10",    MEDIA_BUS_FMT_Y10_1X10 },
+	{ "Y12",    MEDIA_BUS_FMT_Y12_1X12 },
+#ifdef MEDIA_BUS_FMT_Y16_1X16
+	{ "Y16",    MEDIA_BUS_FMT_Y16_1X16 },
+#endif
+
+	{ "y8",     MEDIA_BUS_FMT_Y8_1X8 },
+	{ "y10",    MEDIA_BUS_FMT_Y10_1X10 },
+	{ "y12",    MEDIA_BUS_FMT_Y12_1X12 },
+#ifdef MEDIA_BUS_FMT_Y16_1X16
+	{ "y16",    MEDIA_BUS_FMT_Y16_1X16 },
+#endif
+};
+
 static bool parse_fmt_x(struct v4l2_mbus_framefmt *fmt, char const *s,
 			unsigned int *rate)
 {
 	char		*err;
+	bool		found;
 
 	fmt->width = strtoul(s, &err, 10);
 	if (*err != 'x')
@@ -331,70 +394,17 @@ static bool parse_fmt_x(struct v4l2_mbus_framefmt *fmt, char const *s,
 
 	fmt->field = V4L2_FIELD_NONE;
 
-
-	if (strncmp(s, "YUYV", 4) == 0) {
-		unsigned int	bpp = strtoul(s+4, &err, 10);
-
-		if (*err)
-			return false;
-
-		switch (bpp) {
-		case 8:
-			fmt->code = MEDIA_BUS_FMT_YUYV8_2X8;
+	found = false;
+	for (size_t i = 0; i < ARRAY_SIZE(FMT_DESC); ++i) {
+		if (strcmp(s, FMT_DESC[i].fmt) == 0) {
+			fmt->code = FMT_DESC[i].code;
+			found = true;
 			break;
-		case 10:
-			fmt->code = MEDIA_BUS_FMT_YUYV10_2X10;
-			break;
-		case 12:
-			fmt->code = MEDIA_BUS_FMT_YUYV12_2X12;
-			break;
-		default:
-			return false;
 		}
-	} else if (strncmp(s, "yuyv", 4) == 0) {
-		unsigned int	bpp = strtoul(s+4, &err, 10);
-
-		if (*err)
-			return false;
-
-		switch (bpp) {
-		case 8:
-			fmt->code = MEDIA_BUS_FMT_YUYV8_1X16;
-			break;
-		case 10:
-			fmt->code = MEDIA_BUS_FMT_YUYV10_1X20;
-			break;
-		default:
-			return false;
-		}
-	} else if (strncmp(s, "y", 1) == 0) {
-		unsigned int	bpp = strtoul(s+1, &err, 10);
-
-		if (*err)
-			return false;
-
-		switch (bpp) {
-		case 8:
-			fmt->code = MEDIA_BUS_FMT_Y8_1X8;
-			break;
-		case 10:
-			fmt->code = MEDIA_BUS_FMT_Y10_1X10;
-			break;
-		case 12:
-			fmt->code = MEDIA_BUS_FMT_Y12_1X12;
-			break;
-#ifdef HAVE_FMT_Y16
-		case 16:
-			fmt->code = MEDIA_BUS_FMT_Y16_1X16;
-			break;
-#endif
-
-		default:
-			return false;
-		}
-	} else {
-		return false;
 	}
+
+	if (!found)
+		return false;
 
 	*rate = 30;			/* todo */
 	return true;
